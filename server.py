@@ -4,7 +4,8 @@ import time
 import os
 import flask
 from flask_cors import CORS
-
+import requests
+import json
 
 from flask import g
 
@@ -18,6 +19,18 @@ BROWSER = PLAY.chromium.launch_persistent_context(
     headless=False,
 )
 PAGE = BROWSER.new_page()
+
+GPT_PREFIX = ""
+# For short, concise responses:
+# GPT_PREFIX = "Reply with less than 15 words: "
+
+### RESEMBLE AI CONFIGURATION ###
+### VISIT https://resemble.ai/ TO GET YOUR OWN TOKEN ###
+RESEMBLE_TOKEN = ""
+RESEMBLE_PROJECT = ""
+RESEMBLE_VOICE = ""
+RESEMBLE_ENDPOINT = ""
+
 
 
 def get_input_box():
@@ -67,6 +80,31 @@ def chat():
     response = get_last_message()
     print("Response: ", response)
     return response
+
+
+@APP.route("/voice", methods=["GET"]) #TODO: make this a POST
+def voice():
+    message = flask.request.args.get("q")
+    message = GPT_PREFIX + message
+    print("Sending message: ", message)
+    send_message(message)
+    response = get_last_message()
+    print("Response: ", response)
+    url = RESEMBLE_ENDPOINT
+    payload = json.dumps({
+        "voice_uuid": RESEMBLE_VOICE,
+        "project_uuid": RESEMBLE_PROJECT,
+        "data": f"<speak>{response}</speak>"
+    })
+    headers = {
+        'x-access-token': RESEMBLE_TOKEN,
+        'Content-Type': 'application/json'
+    }
+    response = requests.request("POST", url, headers=headers, data=payload)
+    resemble_response = response.json()
+    audio = resemble_response["audio_content"]
+
+    return audio
 
 # create a route for regenerating the response
 @APP.route("/regenerate", methods=["POST"])

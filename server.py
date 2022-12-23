@@ -10,7 +10,6 @@ import json
 
 
 from flask import g
-CORS(APP)
 
 from playwright.sync_api import sync_playwright
 
